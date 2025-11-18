@@ -7,6 +7,10 @@ import argparse
 from evaluator import evaluate_single
 
 
+hostname = socket.gethostname()
+ip = socket.gethostbyname(hostname)
+
+
 def send_json(conn, obj):
     s = json.dumps(obj, separators=(",", ":")) + "\n"
     conn.sendall(s.encode("utf-8"))
@@ -44,7 +48,9 @@ def worker_loop(host, port):
                 time.sleep(1.0)
                 continue
 
-            result = evaluate_single(task)
+            worker_id = f"{hostname} ({ip})"
+            result = f"{evaluate_single(task)} -- Processed by {worker_id}"
+
             send_json(conn, {"cmd": "result", "result": result})
             ack = recv_json(conn)
     except KeyboardInterrupt:
