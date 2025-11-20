@@ -82,23 +82,28 @@ def handle_worker(conn, addr, init_msg):
 
 
 def handle_printer(conn, addr, init_msg):
-
     send_json(conn, {"status": "CONNECTED", "history_len": len(results)})
 
     for r in results:
         send_json(conn, {"result": r})
 
+    last_index = len(results)
+
     with printers_lock:
         printers.append(conn)
+
     try:
         while True:
-
             with new_result_cond:
-                new_result_cond.wait()
 
-                last = results[-1]
-                send_json(conn, {"result": last})
-    except Exception:
+                while len(results) == last_index:
+                    new_result_cond.wait()
+
+                for r in results[last_index:]:
+                    send_json(conn, {"result": r})
+
+                last_index = len(results)
+    except:
         pass
     finally:
         with printers_lock:
